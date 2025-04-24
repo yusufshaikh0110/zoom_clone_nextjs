@@ -35,14 +35,56 @@ const MeetingSetup = ({
     const [isMicCamToggled, setIsMicCamToggled] = useState(false);
 
     useEffect(() => {
-        if (isMicCamToggled) {
-            call.camera.disable();
-            call.microphone.disable();
-        } else {
-            call.camera.enable();
-            call.microphone.enable();
-        }
+        const setupDevices = async () => {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const hasCamera = devices.some((d) => d.kind === "videoinput");
+                const hasMic = devices.some((d) => d.kind === "audioinput");
+
+                if (!hasCamera || !hasMic) {
+                    console.warn("No camera or microphone found.");
+                    return;
+                }
+
+                if (isMicCamToggled) {
+                    await call.camera.disable();
+                    await call.microphone.disable();
+                } else {
+                    await call.camera.enable();
+                    await call.microphone.enable();
+                }
+            } catch (error) {
+                console.error("Error enabling devices:", error);
+            }
+        };
+
+        setupDevices();
     }, [isMicCamToggled, call.camera, call.microphone]);
+
+    const handleJoin = async () => {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const hasCamera = devices.some((d) => d.kind === "videoinput");
+            const hasMic = devices.some((d) => d.kind === "audioinput");
+
+            if (!hasCamera && !hasMic) {
+                alert("No camera or microphone found. You can still join the call, but your audio/video won't work.");
+            }
+
+            // Optional: manually disable them to avoid internal errors
+            if (!hasCamera) await call.camera.disable();
+            if (!hasMic) await call.microphone.disable();
+
+            await call.join(); // ✅ safely join even if devices are missing
+
+            setIsSetupComplete(true);
+        } catch (error) {
+            console.error("Failed to join call:", error);
+            alert("There was an error joining the call. Please check your permissions.");
+        }
+    };
+
+
 
     if (callTimeNotArrived)
         return (
@@ -76,11 +118,7 @@ const MeetingSetup = ({
             </div>
             <Button
                 className="rounded-md bg-green-500 px-4 py-2.5"
-                onClick={() => {
-                    call.join();
-
-                    setIsSetupComplete(true);
-                }}
+                onClick={handleJoin}
             >
                 Join meeting
             </Button>

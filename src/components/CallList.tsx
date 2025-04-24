@@ -68,7 +68,11 @@ const CallList = ({ type }: { type: 'ended' | 'upcoming' | 'recordings' }) => {
             {calls && calls.length > 0 ? (
                 calls.map((meeting: Call | CallRecording) => (
                     <MeetingCard
-                        key={(meeting as Call).id}
+                        key={
+                            type === 'recordings'
+                                ? (meeting as CallRecording).url
+                                : (meeting as Call).id
+                        }
                         icon={
                             type === 'ended'
                                 ? '/icons/previous.svg'
